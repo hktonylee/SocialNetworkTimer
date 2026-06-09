@@ -38,9 +38,10 @@ Supported sites:
 ```bash
 npm test
 npm run validate
+npm run build
 ```
 
-No build step or third-party dependencies required.
+`npm run build` creates `dist/social-network-timer-1.0.0.zip` for Chrome Web Store upload. No Node third-party dependencies required; build uses the system `zip` command.
 
 ## Permissions
 

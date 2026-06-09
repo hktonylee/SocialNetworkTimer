@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "node scripts/build-extension.js",
     "test": "node --test",
-    "validate": "node --check src/timer.js && node --check src/background-controller.js && node --check src/background.js && node --check src/content-view.js && node --check src/content.js && node -e \"JSON.parse(require('node:fs').readFileSync('manifest.json', 'utf8'))\""
+    "validate": "node --check scripts/build-extension.js && node --check src/timer.js && node --check src/background-controller.js && node --check src/background.js && node --check src/content-view.js && node --check src/content.js && node -e \"JSON.parse(require('node:fs').readFileSync('manifest.json', 'utf8'))\""
   }
 }

@@ -1,0 +1,3 @@
+dist/
+.worktrees/
+node_modules/
