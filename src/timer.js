@@ -7,6 +7,7 @@ const supportedHosts = [
   "tiktok.com",
   "linkedin.com",
   "youtube.com",
+  "threads.com",
   "threads.net",
   "bsky.app",
 ];

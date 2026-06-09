@@ -17,6 +17,7 @@
     "*://*.tiktok.com/*",
     "*://*.linkedin.com/*",
     "*://*.youtube.com/*",
+    "*://*.threads.com/*",
     "*://*.threads.net/*",
     "*://*.bsky.app/*"
   ],
@@ -35,6 +36,7 @@
         "*://*.tiktok.com/*",
         "*://*.linkedin.com/*",
         "*://*.youtube.com/*",
+        "*://*.threads.com/*",
         "*://*.threads.net/*",
         "*://*.bsky.app/*"
       ],
@@ -59,6 +61,7 @@
         "*://*.tiktok.com/*",
         "*://*.linkedin.com/*",
         "*://*.youtube.com/*",
+        "*://*.threads.com/*",
         "*://*.threads.net/*",
         "*://*.bsky.app/*"
       ]

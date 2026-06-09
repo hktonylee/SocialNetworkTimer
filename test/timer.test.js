@@ -14,6 +14,7 @@ test("recognizes supported social domains and subdomains", () => {
   assert.equal(isSupportedUrl("https://www.facebook.com/feed"), true);
   assert.equal(isSupportedUrl("https://old.reddit.com/r/test"), true);
   assert.equal(isSupportedUrl("https://x.com/home"), true);
+  assert.equal(isSupportedUrl("https://www.threads.com/"), true);
   assert.equal(isSupportedUrl("https://bsky.app/"), true);
 });
 
