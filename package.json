@@ -1,0 +1,10 @@
+{
+  "name": "social-network-timer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "validate": "node --check src/timer.js && node --check src/background-controller.js && node --check src/background.js && node --check src/content-view.js && node --check src/content.js && node -e \"JSON.parse(require('node:fs').readFileSync('manifest.json', 'utf8'))\""
+  }
+}

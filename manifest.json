@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Social Network Daily Timer",
+  "version": "1.0.0",
+  "description": "Shows shared daily time spent on social media.",
+  "permissions": [
+    "alarms",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*.facebook.com/*",
+    "*://*.instagram.com/*",
+    "*://*.x.com/*",
+    "*://*.twitter.com/*",
+    "*://*.reddit.com/*",
+    "*://*.tiktok.com/*",
+    "*://*.linkedin.com/*",
+    "*://*.youtube.com/*",
+    "*://*.threads.net/*",
+    "*://*.bsky.app/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.facebook.com/*",
+        "*://*.instagram.com/*",
+        "*://*.x.com/*",
+        "*://*.twitter.com/*",
+        "*://*.reddit.com/*",
+        "*://*.tiktok.com/*",
+        "*://*.linkedin.com/*",
+        "*://*.youtube.com/*",
+        "*://*.threads.net/*",
+        "*://*.bsky.app/*"
+      ],
+      "js": [
+        "src/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
