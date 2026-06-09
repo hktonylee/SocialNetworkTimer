@@ -18,9 +18,9 @@
 - Create: `package.json`
 - Create: `manifest.json`
 
-- [ ] Add Node test scripts and extension manifest.
-- [ ] Validate manifest JSON.
-- [ ] Commit scaffold.
+- [x] Add Node test scripts and extension manifest.
+- [x] Validate manifest JSON.
+- [x] Commit scaffold.
 
 ### Task 2: Pure Timer Logic
 
@@ -28,13 +28,13 @@
 - Create: `src/timer.js`
 - Test: `test/timer.test.js`
 
-- [ ] Write failing tests for host matching and `HH:MM:SS` formatting.
-- [ ] Run tests and confirm expected failures.
-- [ ] Implement minimal matching and formatting.
-- [ ] Write failing tests for state normalization, active/inactive reconciliation, inactivity cap, and midnight reset.
-- [ ] Implement reconciliation.
-- [ ] Run tests.
-- [ ] Commit core timer.
+- [x] Write failing tests for host matching and `HH:MM:SS` formatting.
+- [x] Run tests and confirm expected failures.
+- [x] Implement minimal matching and formatting.
+- [x] Write failing tests for state normalization, active/inactive reconciliation, inactivity cap, and midnight reset.
+- [x] Implement reconciliation.
+- [x] Run tests.
+- [x] Commit core timer.
 
 ## Chunk 2: Browser Integration
 
@@ -45,11 +45,11 @@
 - Create: `src/background-controller.js`
 - Test: `test/background-controller.test.js`
 
-- [ ] Write failing tests for event reconciliation, persistence, and shared snapshot.
-- [ ] Implement testable background controller.
-- [ ] Wire Chrome tab/window/alarm/runtime events.
-- [ ] Run tests.
-- [ ] Commit background integration.
+- [x] Write failing tests for event reconciliation, persistence, and shared snapshot.
+- [x] Implement testable background controller.
+- [x] Wire Chrome tab/window/alarm/runtime events.
+- [x] Run tests.
+- [x] Commit background integration.
 
 ### Task 4: Content Timer UI
 
@@ -58,11 +58,11 @@
 - Create: `src/content-view.js`
 - Test: `test/content-view.test.js`
 
-- [ ] Write failing tests for snapshot projection and local ticking.
-- [ ] Implement pure display projection.
-- [ ] Implement Shadow DOM glass timer and message synchronization.
-- [ ] Run tests.
-- [ ] Commit content UI.
+- [x] Write failing tests for snapshot projection and local ticking.
+- [x] Implement pure display projection.
+- [x] Implement Shadow DOM glass timer and message synchronization.
+- [x] Run tests.
+- [x] Commit content UI.
 
 ## Chunk 3: Finish
 
@@ -71,7 +71,7 @@
 **Files:**
 - Create: `README.md`
 
-- [ ] Document install, behavior, permissions, supported sites.
-- [ ] Run full test suite and manifest validation.
-- [ ] Inspect extension files and Git diff.
-- [ ] Commit docs.
+- [x] Document install, behavior, permissions, supported sites.
+- [x] Run full test suite and manifest validation.
+- [x] Inspect extension files and Git diff.
+- [x] Commit docs.
