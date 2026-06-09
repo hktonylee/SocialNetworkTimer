@@ -22,7 +22,11 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
 
         .timer {
           box-sizing: border-box;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           min-width: 280px;
+          min-height: 20vh;
           padding: 13px 30px calc(10px + env(safe-area-inset-bottom, 0px));
           overflow: hidden;
           color: #c80f25;
@@ -37,7 +41,7 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
           backdrop-filter: blur(18px) saturate(145%);
           -webkit-backdrop-filter: blur(18px) saturate(145%);
           font-family: "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
-          font-size: clamp(38px, 5vw, 64px);
+          font-size: clamp(64px, 12vh, 140px);
           font-variant-numeric: tabular-nums;
           font-weight: 800;
           line-height: 1;
