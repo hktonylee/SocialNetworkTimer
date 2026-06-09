@@ -2,6 +2,8 @@
 
 Chrome extension showing one shared daily social-media usage timer at bottom center of supported pages.
 
+![Social Network Daily Timer showing a red glass timer at bottom center](docs/images/social-network-daily-timer.png)
+
 ## Behavior
 
 - Counts only active social tab in focused Chrome window.
