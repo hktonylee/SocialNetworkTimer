@@ -22,9 +22,9 @@ Create Google Chrome Manifest V3 extension showing one shared daily social-media
 - Count at most one second per elapsed second, regardless of open social tabs or windows.
 - Stop counting when active tab is unsupported, Chrome window loses focus, or Chrome is suspended.
 - Persist daily total across reloads, tab closures, and Chrome restarts.
-- Reset total at local midnight.
+- Reset displayed total at local midnight. If an active session crosses midnight, assign elapsed time before midnight to previous day and begin current day at zero.
 - Use elapsed timestamps rather than interval tick count so service-worker suspension does not lose active usage time.
-- Cap a single elapsed update to a short inactivity threshold. This prevents device sleep or delayed service-worker wakeups from adding long inactive periods.
+- Treat elapsed gaps longer than two alarm periods as uncertain and count at most two alarm periods. This prevents device sleep or delayed service-worker wakeups from adding long inactive periods.
 
 ## Architecture
 
@@ -38,8 +38,8 @@ Responsibilities:
 - Determine whether current active URL belongs to supported site.
 - Reconcile elapsed usage whenever relevant browser state changes or periodic alarm fires.
 - Store current local date, accumulated milliseconds, and active-session start timestamp in `chrome.storage.local`.
-- Reset stale state when stored local date differs from current local date.
-- Broadcast updated total to supported tabs.
+- Split active elapsed usage at local midnight and reset stale state when stored local date differs from current local date.
+- Broadcast updated total plus active/inactive state and synchronization timestamp to supported tabs.
 
 ### Content Script
 
@@ -50,6 +50,8 @@ Responsibilities:
 - Create isolated timer UI inside Shadow DOM.
 - Request current daily total from background service worker.
 - Receive timer updates and render shared total.
+- Tick display locally once per second while background state says counting is active.
+- Re-synchronize from background worker after visibility changes and periodic broadcasts.
 - Remove or recreate UI safely if page scripts modify DOM.
 
 ### Shared Timer Logic
@@ -70,8 +72,8 @@ Pure logic remains independent from Chrome APIs for unit testing.
 2. Background worker loads persisted state and reconciles elapsed active usage.
 3. Background worker queries focused window's active tab.
 4. Supported active tab starts or continues active session; other state stops session.
-5. Worker persists reconciled state and broadcasts total.
-6. Content scripts render broadcast total.
+5. Worker persists reconciled state and broadcasts total, counting state, and synchronization timestamp.
+6. Content scripts render broadcast total and locally advance display while counting is active.
 7. Periodic Chrome alarm wakes worker, reconciles state, persists it, and refreshes visible timers.
 
 ## Timer UI
@@ -97,7 +99,7 @@ Pure logic remains independent from Chrome APIs for unit testing.
 
 - `storage`: persist daily total.
 - `tabs`: inspect active tab URL and send updates.
-- `alarms`: periodically reconcile and refresh timer.
+- `alarms`: periodically reconcile and refresh timer using Chrome's minimum supported repeating interval.
 - Host permissions limited to supported social-media domains.
 
 ## Testing
@@ -110,7 +112,7 @@ Unit tests:
 - No counting while inactive.
 - No double counting across state changes.
 - Inactivity-gap cap.
-- Local-date reset.
+- Local-midnight split and reset.
 - Corrupt-state recovery.
 
 Integration-oriented tests:
@@ -128,6 +130,7 @@ Manual verification:
 - Confirm unsupported tabs and unfocused Chrome stop total.
 - Confirm reload and Chrome restart preserve total.
 - Confirm local-day change resets total.
+- Confirm display advances every second while active despite less-frequent background alarms.
 
 ## Acceptance Criteria
 
@@ -138,4 +141,5 @@ Manual verification:
 - Total persists across reloads and Chrome restarts.
 - Total resets at local midnight.
 - Device sleep and long service-worker suspension do not add long inactive gaps.
+- Visible timer advances once per second while counting is active.
 - Automated tests cover core counting, reset, persistence, host matching, and formatting behavior.
