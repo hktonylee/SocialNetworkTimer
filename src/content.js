@@ -6,10 +6,10 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
     projectSnapshot,
   }) => {
     const hostId = "social-network-daily-timer";
-    const collapseStorageKey = "socialTimerCollapsedUntil";
     const maxLocalGapMs = 60_000;
     let snapshot = null;
     let showTimer;
+    let collapsedUntilMs = 0;
 
     const host = document.createElement("div");
     host.id = hostId;
@@ -131,17 +131,13 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
 
     function ensureMounted() {
       const nowMs = Date.now();
-      const hidden = isPanelHidden(
-        sessionStorage.getItem(collapseStorageKey),
-        nowMs,
-      );
+      const hidden = isPanelHidden(String(collapsedUntilMs), nowMs);
       if (hidden) {
         host.remove();
-        const expiryMs = Number(sessionStorage.getItem(collapseStorageKey));
         window.clearTimeout(showTimer);
-        showTimer = window.setTimeout(ensureMounted, expiryMs - nowMs);
+        showTimer = window.setTimeout(ensureMounted, collapsedUntilMs - nowMs);
       } else if (!host.isConnected) {
-        sessionStorage.removeItem(collapseStorageKey);
+        collapsedUntilMs = 0;
         document.documentElement.append(host);
       }
     }
@@ -157,8 +153,7 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
       void requestSnapshot();
     });
     collapseButton.addEventListener("click", () => {
-      const expiryMs = collapseUntil(Date.now());
-      sessionStorage.setItem(collapseStorageKey, String(expiryMs));
+      collapsedUntilMs = collapseUntil(Date.now());
       ensureMounted();
     });
 

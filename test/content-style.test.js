@@ -21,3 +21,10 @@ test("timer has clickable circular collapse button centered on top edge", async 
   assert.match(source, /\.collapse\s*\{[\s\S]*pointer-events:\s*auto;/);
   assert.match(source, /\.collapse\s*\{[\s\S]*left:\s*50%;/);
 });
+
+test("collapse state is memory-only so refresh shows panel again", async () => {
+  const source = await readFile(new URL("../src/content.js", import.meta.url), "utf8");
+
+  assert.doesNotMatch(source, /sessionStorage/);
+  assert.match(source, /let collapsedUntilMs = 0;/);
+});

@@ -16,8 +16,8 @@ Let user hide timer panel in current social-media tab for one minute.
 ## Scope and Persistence
 
 - Collapse applies only to current tab.
-- Store hide-expiry timestamp in page `sessionStorage`.
-- Hide state survives reloads and same-tab navigation while expiry remains active.
+- Store hide-expiry timestamp in content-script memory only.
+- Refreshing, reloading, or navigating the tab shows panel and button again.
 - Closing tab clears hide state.
 - Missing, malformed, or expired values show panel normally.
 
@@ -34,6 +34,6 @@ Let user hide timer panel in current social-media tab for one minute.
 
 - Circular collapse button appears centered on timer panel top edge.
 - Clicking button hides entire panel for one minute in current tab only.
-- Reload/navigation in same tab preserves remaining hidden duration.
+- Reload/navigation in same tab shows panel and button again.
 - Panel returns automatically after expiry.
 - Timer accounting continues unchanged while hidden.
