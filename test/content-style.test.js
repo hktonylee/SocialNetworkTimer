@@ -17,6 +17,11 @@ test("timer has clickable circular collapse button centered on top edge", async 
 
   assert.match(source, /class="collapse"/);
   assert.match(source, /aria-label="Hide timer for one minute"/);
+  assert.match(source, /class="collapse-icon"/);
+  assert.match(source, /viewBox="0 0 320 512"/);
+  assert.match(source, /aria-hidden="true"/);
+  assert.doesNotMatch(source, />⌄</);
+  assert.doesNotMatch(source, /font-awesome|fontawesome/i);
   assert.match(source, /\.collapse\s*\{[\s\S]*border-radius:\s*50%;/);
   assert.match(source, /\.collapse\s*\{[\s\S]*pointer-events:\s*auto;/);
   assert.match(source, /\.collapse\s*\{[\s\S]*left:\s*50%;/);

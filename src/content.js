@@ -45,11 +45,15 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
           box-shadow:
             0 5px 16px rgba(31, 38, 45, 0.18),
             inset 0 1px 0 rgba(255, 255, 255, 0.94);
-          font-family: "Trebuchet MS", sans-serif;
-          font-size: 25px;
-          font-weight: 800;
-          line-height: 40px;
           text-align: center;
+        }
+
+        .collapse-icon {
+          display: block;
+          width: 18px;
+          height: 18px;
+          margin: auto;
+          fill: currentColor;
         }
 
         .collapse:hover {
@@ -92,7 +96,11 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
           text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
         }
       </style>
-      <button class="collapse" type="button" aria-label="Hide timer for one minute">⌄</button>
+      <button class="collapse" type="button" aria-label="Hide timer for one minute">
+        <svg class="collapse-icon" aria-hidden="true" focusable="false" viewBox="0 0 320 512" xmlns="http://www.w3.org/2000/svg">
+          <path d="M143 256.3 7 120.3c-9.4-9.4-9.4-24.6 0-33.9l22.6-22.6c9.4-9.4 24.6-9.4 33.9 0l96.4 96.4 96.4-96.4c9.4-9.4 24.6-9.4 33.9 0l22.6 22.6c9.4 9.4 9.4 24.6 0 33.9l-136 136c-9.2 9.4-24.4 9.4-33.8 0zm34 192 136-136c9.4-9.4 9.4-24.6 0-33.9l-22.6-22.6c-9.4-9.4-24.6-9.4-33.9 0L160 352.2l-96.4-96.4c-9.4-9.4-24.6-9.4-33.9 0L7 278.3c-9.4 9.4-9.4 24.6 0 33.9l136 136c9.3 9.5 24.5 9.5 34 .1z" />
+        </svg>
+      </button>
       <div class="timer" role="timer" aria-live="off">00:00:00</div>
     `;
     const collapseButton = shadow.querySelector(".collapse");
