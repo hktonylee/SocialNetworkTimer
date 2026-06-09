@@ -3,6 +3,9 @@
   "name": "Social Network Daily Timer",
   "version": "1.0.0",
   "description": "Shows shared daily time spent on social media.",
+  "icons": {
+    "128": "icon.png"
+  },
   "permissions": [
     "alarms",
     "storage",

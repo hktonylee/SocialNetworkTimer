@@ -21,7 +21,10 @@ async function listFiles(directory) {
 }
 
 const archivePath = `dist/${packageJson.name}-${manifest.version}.zip`;
-const extensionFiles = ["manifest.json", ...await listFiles("src")];
+const iconFiles = Object.values(manifest.icons ?? {});
+const extensionFiles = [
+  ...new Set(["manifest.json", ...iconFiles, ...await listFiles("src")]),
+].sort();
 
 await mkdir("dist", { recursive: true });
 await rm(archivePath, { force: true });

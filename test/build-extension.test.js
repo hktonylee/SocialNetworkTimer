@@ -17,6 +17,7 @@ test("build target creates Chrome Web Store publication zip", async () => {
     }).trim().split("\n");
 
     assert.deepEqual(entries.toSorted(), [
+      "icon.png",
       "manifest.json",
       "src/background-controller.js",
       "src/background.js",

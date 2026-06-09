@@ -15,3 +15,11 @@ test("injects timer on Threads dot com pages", async () => {
   assert.ok(manifest.content_scripts[0].matches.includes(pattern));
   assert.ok(manifest.web_accessible_resources[0].matches.includes(pattern));
 });
+
+test("uses icon png as extension icon", async () => {
+  const manifest = await readManifest();
+
+  assert.deepEqual(manifest.icons, {
+    128: "icon.png",
+  });
+});
