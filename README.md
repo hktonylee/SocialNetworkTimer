@@ -12,6 +12,7 @@ Chrome extension showing one shared daily social-media usage timer at bottom cen
 - Resets at local midnight.
 - Stops counting on unsupported pages or when Chrome loses focus.
 - Limits uncertain long gaps caused by device sleep.
+- Circular collapse button hides timer in current tab for one minute.
 
 Supported sites:
 

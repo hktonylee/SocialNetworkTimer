@@ -5,6 +5,21 @@ export function getDelayToNextWallClockSecond(nowMs = Date.now()) {
   return remainderMs === 0 ? 1_000 : 1_000 - remainderMs;
 }
 
+const collapseDurationMs = 60_000;
+
+export function collapseUntil(nowMs) {
+  return nowMs + collapseDurationMs;
+}
+
+export function isPanelHidden(storedExpiry, nowMs) {
+  if (typeof storedExpiry !== "string" || storedExpiry.trim() === "") {
+    return false;
+  }
+
+  const expiryMs = Number(storedExpiry);
+  return Number.isFinite(expiryMs) && expiryMs > nowMs;
+}
+
 export function projectSnapshot(
   snapshot,
   { nowMs, dateKey, maxLocalGapMs },

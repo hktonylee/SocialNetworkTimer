@@ -1,7 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { getDelayToNextWallClockSecond, projectSnapshot } from "../src/content-view.js";
+import {
+  collapseUntil,
+  getDelayToNextWallClockSecond,
+  isPanelHidden,
+  projectSnapshot,
+} from "../src/content-view.js";
 
 test("projects active snapshot forward for smooth local display", () => {
   assert.equal(
@@ -94,4 +99,15 @@ test("aligns first timer tick to next wall clock second", () => {
   assert.equal(getDelayToNextWallClockSecond(1_234), 766);
   assert.equal(getDelayToNextWallClockSecond(1_999), 1);
   assert.equal(getDelayToNextWallClockSecond(2_000), 1_000);
+});
+
+test("creates one-minute collapse expiry", () => {
+  assert.equal(collapseUntil(1_000), 61_000);
+});
+
+test("hides panel only while stored expiry is in future", () => {
+  assert.equal(isPanelHidden("61000", 1_000), true);
+  assert.equal(isPanelHidden("61000", 61_000), false);
+  assert.equal(isPanelHidden("bad", 1_000), false);
+  assert.equal(isPanelHidden(null, 1_000), false);
 });
