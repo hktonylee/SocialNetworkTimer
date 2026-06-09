@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { projectSnapshot } from "../src/content-view.js";
+import { getDelayToNextWallClockSecond, projectSnapshot } from "../src/content-view.js";
 
 test("projects active snapshot forward for smooth local display", () => {
   assert.equal(
@@ -88,4 +88,10 @@ test("renders zero for malformed snapshots", () => {
     }),
     "00:00:00",
   );
+});
+
+test("aligns first timer tick to next wall clock second", () => {
+  assert.equal(getDelayToNextWallClockSecond(1_234), 766);
+  assert.equal(getDelayToNextWallClockSecond(1_999), 1);
+  assert.equal(getDelayToNextWallClockSecond(2_000), 1_000);
 });

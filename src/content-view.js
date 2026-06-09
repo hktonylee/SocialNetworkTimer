@@ -1,5 +1,10 @@
 import { formatDuration } from "./timer.js";
 
+export function getDelayToNextWallClockSecond(nowMs = Date.now()) {
+  const remainderMs = Math.max(0, Math.floor(nowMs)) % 1_000;
+  return remainderMs === 0 ? 1_000 : 1_000 - remainderMs;
+}
+
 export function projectSnapshot(
   snapshot,
   { nowMs, dateKey, maxLocalGapMs },

@@ -1,5 +1,5 @@
 void import(chrome.runtime.getURL("src/content-view.js")).then(
-  ({ projectSnapshot }) => {
+  ({ getDelayToNextWallClockSecond, projectSnapshot }) => {
     const hostId = "social-network-daily-timer";
     const maxLocalGapMs = 60_000;
     let snapshot = null;
@@ -106,7 +106,10 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
     new MutationObserver(ensureMounted).observe(document.documentElement, {
       childList: true,
     });
-    window.setInterval(render, 1_000);
+    window.setTimeout(() => {
+      render();
+      window.setInterval(render, 1_000);
+    }, getDelayToNextWallClockSecond());
     window.setInterval(requestSnapshot, 30_000);
     void requestSnapshot();
   },
