@@ -33,3 +33,12 @@ test("collapse state is memory-only so refresh shows panel again", async () => {
   assert.doesNotMatch(source, /sessionStorage/);
   assert.match(source, /let collapsedUntilMs = 0;/);
 });
+
+test("retries snapshot fetch quickly when page-load response is missing", async () => {
+  const source = await readFile(new URL("../src/content.js", import.meta.url), "utf8");
+
+  assert.match(source, /shouldRetrySnapshotResponse/);
+  assert.match(source, /snapshotRetryDelayMs = 1_000;/);
+  assert.match(source, /window\.setTimeout\(requestSnapshot,\s*snapshotRetryDelayMs\)/);
+  assert.match(source, /catch\s*\{[\s\S]*scheduleSnapshotRetry\(\);/);
+});

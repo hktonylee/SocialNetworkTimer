@@ -40,3 +40,16 @@ export function projectSnapshot(
     : 0;
   return formatDuration(snapshot.elapsedMs + projectedMs);
 }
+
+export function shouldRetrySnapshotResponse(response) {
+  return !(
+    response !== null &&
+    typeof response === "object" &&
+    response.type === "SOCIAL_TIMER_SNAPSHOT" &&
+    typeof response.dateKey === "string" &&
+    Number.isFinite(response.elapsedMs) &&
+    response.elapsedMs >= 0 &&
+    typeof response.isCounting === "boolean" &&
+    Number.isFinite(response.syncedAtMs)
+  );
+}

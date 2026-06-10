@@ -7,6 +7,7 @@ import {
   isPanelHidden,
   projectSnapshot,
 } from "../src/content-view.js";
+import * as contentView from "../src/content-view.js";
 
 test("projects active snapshot forward for smooth local display", () => {
   assert.equal(
@@ -92,6 +93,26 @@ test("renders zero for malformed snapshots", () => {
       maxLocalGapMs: 60_000,
     }),
     "00:00:00",
+  );
+});
+
+test("retries page-load snapshot requests until valid snapshot arrives", () => {
+  assert.equal(typeof contentView.shouldRetrySnapshotResponse, "function");
+  assert.equal(contentView.shouldRetrySnapshotResponse(null), true);
+  assert.equal(contentView.shouldRetrySnapshotResponse({ type: "OTHER" }), true);
+  assert.equal(
+    contentView.shouldRetrySnapshotResponse({ type: "SOCIAL_TIMER_SNAPSHOT" }),
+    true,
+  );
+  assert.equal(
+    contentView.shouldRetrySnapshotResponse({
+      type: "SOCIAL_TIMER_SNAPSHOT",
+      dateKey: "2026-06-09",
+      elapsedMs: 10_000,
+      isCounting: true,
+      syncedAtMs: 20_000,
+    }),
+    false,
   );
 });
 

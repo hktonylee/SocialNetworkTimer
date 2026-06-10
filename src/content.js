@@ -4,10 +4,13 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
     getDelayToNextWallClockSecond,
     isPanelHidden,
     projectSnapshot,
+    shouldRetrySnapshotResponse,
   }) => {
     const hostId = "social-network-daily-timer";
     const maxLocalGapMs = 60_000;
+    const snapshotRetryDelayMs = 1_000;
     let snapshot = null;
+    let snapshotRetryTimer;
     let showTimer;
     let collapsedUntilMs = 0;
 
@@ -123,17 +126,32 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
       });
     }
 
+    function clearSnapshotRetry() {
+      window.clearTimeout(snapshotRetryTimer);
+      snapshotRetryTimer = undefined;
+    }
+
+    function scheduleSnapshotRetry() {
+      window.clearTimeout(snapshotRetryTimer);
+      snapshotRetryTimer = window.setTimeout(requestSnapshot, snapshotRetryDelayMs);
+    }
+
     async function requestSnapshot() {
       try {
         const response = await chrome.runtime.sendMessage({
           type: "SOCIAL_TIMER_GET_SNAPSHOT",
         });
-        if (response?.type === "SOCIAL_TIMER_SNAPSHOT") {
-          snapshot = response;
-          render();
+
+        if (shouldRetrySnapshotResponse(response)) {
+          scheduleSnapshotRetry();
+          return;
         }
+
+        snapshot = response;
+        clearSnapshotRetry();
+        render();
       } catch {
-        // Service worker may be restarting. Next interval or visibility event retries.
+        scheduleSnapshotRetry();
       }
     }
 
@@ -151,8 +169,9 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
     }
 
     chrome.runtime.onMessage.addListener((message) => {
-      if (message?.type === "SOCIAL_TIMER_SNAPSHOT") {
+      if (!shouldRetrySnapshotResponse(message)) {
         snapshot = message;
+        clearSnapshotRetry();
         render();
       }
     });
