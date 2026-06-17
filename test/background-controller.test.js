@@ -18,67 +18,90 @@ function createStorage(initialValue) {
   };
 }
 
-test("persists and broadcasts one shared active timer snapshot", async () => {
-  let nowMs = 1_000;
-  let shouldCount = true;
+test("starts and broadcasts one active interval", async () => {
+  const nowMs = 1_000;
   const storage = createStorage(undefined);
   const snapshots = [];
   const controller = createBackgroundController({
     storage,
-    getShouldCount: async () => shouldCount,
+    getShouldCount: async () => true,
     broadcast: async (snapshot) => snapshots.push(snapshot),
     now: () => nowMs,
-    getDateKey: () => "2026-06-09",
-    maxGapMs: 120_000,
+    getDateKey: () => "2026-06-16",
   });
 
-  await controller.reconcile();
-  nowMs = 11_000;
-  await controller.reconcile();
-  shouldCount = false;
-  nowMs = 16_000;
-  const snapshot = await controller.reconcile();
+  const snapshot = await controller.sync();
 
   assert.deepEqual(storage.value(), {
-    dateKey: "2026-06-09",
-    elapsedMs: 15_000,
-    activeSinceMs: null,
+    dateKey: "2026-06-16",
+    intervals: [],
+    active: { startMs: 1_000 },
   });
   assert.deepEqual(snapshot, {
-    type: "SOCIAL_TIMER_SNAPSHOT",
-    dateKey: "2026-06-09",
-    elapsedMs: 15_000,
-    isCounting: false,
-    syncedAtMs: 16_000,
+    type: "SOCIAL_TIMER_DAY",
+    dateKey: "2026-06-16",
+    intervals: [],
+    active: { startMs: 1_000 },
   });
   assert.deepEqual(snapshots.at(-1), snapshot);
 });
 
-test("continues persisted active timer after controller restart", async () => {
-  let nowMs = 20_000;
+test("closes active interval when counting stops", async () => {
+  const nowMs = 5_000;
   const storage = createStorage({
-    dateKey: "2026-06-09",
-    elapsedMs: 7_000,
-    activeSinceMs: 10_000,
+    dateKey: "2026-06-16",
+    intervals: [],
+    active: { startMs: 1_000 },
+  });
+  const controller = createBackgroundController({
+    storage,
+    getShouldCount: async () => false,
+    broadcast: async () => {},
+    now: () => nowMs,
+    getDateKey: () => "2026-06-16",
+  });
+
+  const snapshot = await controller.sync();
+
+  assert.deepEqual(storage.value(), {
+    dateKey: "2026-06-16",
+    intervals: [{ startMs: 1_000, endMs: 5_000 }],
+    active: null,
+  });
+  assert.deepEqual(snapshot, {
+    type: "SOCIAL_TIMER_DAY",
+    dateKey: "2026-06-16",
+    intervals: [{ startMs: 1_000, endMs: 5_000 }],
+    active: null,
+  });
+});
+
+test("does not duplicate active interval on repeated sync", async () => {
+  const nowMs = 2_000;
+  const storage = createStorage({
+    dateKey: "2026-06-16",
+    intervals: [],
+    active: { startMs: 1_000 },
   });
   const controller = createBackgroundController({
     storage,
     getShouldCount: async () => true,
     broadcast: async () => {},
     now: () => nowMs,
-    getDateKey: () => "2026-06-09",
-    maxGapMs: 120_000,
+    getDateKey: () => "2026-06-16",
   });
 
-  const snapshot = await controller.getSnapshot();
+  await controller.sync();
 
-  assert.equal(snapshot.elapsedMs, 17_000);
-  assert.equal(snapshot.isCounting, true);
-  assert.equal(storage.value().activeSinceMs, nowMs);
+  assert.deepEqual(storage.value(), {
+    dateKey: "2026-06-16",
+    intervals: [],
+    active: { startMs: 1_000 },
+  });
 });
 
-test("serializes overlapping reconciliation requests", async () => {
-  let nowMs = 1_000;
+test("serializes overlapping sync requests", async () => {
+  const nowMs = 1_000;
   let releaseActivity;
   let activityStarted;
   const started = new Promise((resolve) => {
@@ -100,17 +123,18 @@ test("serializes overlapping reconciliation requests", async () => {
     },
     broadcast: async () => {},
     now: () => nowMs,
-    getDateKey: () => "2026-06-09",
-    maxGapMs: 120_000,
+    getDateKey: () => "2026-06-16",
   });
 
-  const first = controller.reconcile();
-  nowMs = 11_000;
-  const second = controller.reconcile();
+  const first = controller.sync();
+  const second = controller.sync();
   await started;
   releaseActivity();
   await Promise.all([first, second]);
 
-  assert.equal(storage.value().elapsedMs, 10_000);
-  assert.equal(storage.value().activeSinceMs, 11_000);
+  assert.deepEqual(storage.value(), {
+    dateKey: "2026-06-16",
+    intervals: [],
+    active: { startMs: 1_000 },
+  });
 });

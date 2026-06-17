@@ -1,4 +1,4 @@
-import { reconcileState } from "./timer.js";
+import { createDaySnapshot, reconcileDayState } from "./timer.js";
 
 export function createBackgroundController({
   storage,
@@ -6,11 +6,10 @@ export function createBackgroundController({
   broadcast,
   now,
   getDateKey,
-  maxGapMs,
 }) {
   let queue = Promise.resolve();
 
-  function reconcile() {
+  function sync() {
     const nowMs = now();
     const dateKey = getDateKey(nowMs);
 
@@ -19,19 +18,12 @@ export function createBackgroundController({
         storage.read(),
         getShouldCount(),
       ]);
-      const state = reconcileState(storedState, {
+      const state = reconcileDayState(storedState, {
         nowMs,
         dateKey,
         shouldCount,
-        maxGapMs,
       });
-      const snapshot = {
-        type: "SOCIAL_TIMER_SNAPSHOT",
-        dateKey: state.dateKey,
-        elapsedMs: state.elapsedMs,
-        isCounting: state.activeSinceMs !== null,
-        syncedAtMs: nowMs,
-      };
+      const snapshot = createDaySnapshot(state);
 
       await storage.write(state);
       await broadcast(snapshot);
@@ -43,7 +35,7 @@ export function createBackgroundController({
   }
 
   return {
-    reconcile,
-    getSnapshot: reconcile,
+    sync,
+    getSnapshot: sync,
   };
 }
