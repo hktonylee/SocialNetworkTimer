@@ -30,16 +30,17 @@ Create Google Chrome Manifest V3 extension showing one shared daily social-media
 
 ### Background Service Worker
 
-Owns timer state and is sole writer to persisted usage.
+Records activity intervals and is sole writer to persisted usage.
 
 Responsibilities:
 
 - Detect active-tab and focused-window changes through Chrome tab/window events.
 - Determine whether current active URL belongs to supported site.
-- Reconcile elapsed usage whenever relevant browser state changes or periodic alarm fires.
-- Store current local date, accumulated milliseconds, and active-session start timestamp in `chrome.storage.local`.
-- Split active elapsed usage at local midnight and reset stale state when stored local date differs from current local date.
-- Broadcast updated total plus active/inactive state and synchronization timestamp to supported tabs.
+- Reconcile activity transitions whenever relevant browser state changes or periodic alarm fires.
+- Store current local date, completed interval timestamps, and one optional active interval start timestamp in `chrome.storage.local`.
+- Reset stale state when stored local date differs from current local date.
+- Broadcast timestamp-only current-day interval state to supported tabs.
+- Avoid storing or returning URLs, hostnames, page titles, tab IDs, origins, or account identifiers.
 
 ### Content Script
 
@@ -48,9 +49,9 @@ Runs on supported pages.
 Responsibilities:
 
 - Create isolated timer UI inside Shadow DOM.
-- Request current daily total from background service worker.
-- Receive timer updates and render shared total.
-- Tick display locally once per second while background state says counting is active.
+- Request current-day interval state from background service worker.
+- Receive timer updates and render shared total from completed intervals plus one optional active interval.
+- Tick display locally once per second while an active interval is open.
 - Re-synchronize from background worker after visibility changes and periodic broadcasts.
 - Remove or recreate UI safely if page scripts modify DOM.
 
@@ -60,8 +61,8 @@ Pure functions handle:
 
 - Supported-host matching.
 - Local date key generation.
-- Elapsed-time reconciliation.
-- Inactivity cap.
+- Interval-state reconciliation.
+- Daily usage calculation.
 - `HH:MM:SS` formatting.
 
 Pure logic remains independent from Chrome APIs for unit testing.
@@ -69,12 +70,14 @@ Pure logic remains independent from Chrome APIs for unit testing.
 ## Data Flow
 
 1. Extension starts or browser activity changes.
-2. Background worker loads persisted state and reconciles elapsed active usage.
+2. Background worker loads persisted state and reconciles active/inactive transitions.
 3. Background worker queries focused window's active tab.
-4. Supported active tab starts or continues active session; other state stops session.
-5. Worker persists reconciled state and broadcasts total, counting state, and synchronization timestamp.
-6. Content scripts render broadcast total and locally advance display while counting is active.
-7. Periodic Chrome alarm wakes worker, reconciles state, persists it, and refreshes visible timers.
+4. Supported active tab starts or continues an active interval; other state closes the active interval.
+5. Worker persists current-day intervals and broadcasts timestamp-only day state.
+6. Content scripts render broadcast intervals and locally advance display while an active interval is open.
+7. Periodic Chrome alarm wakes worker, syncs state, persists it, and refreshes visible timers.
+
+Current implementation note: later architecture stores timestamp-only same-day intervals plus one optional active interval. See `docs/specs/2026-06-16-event-interval-timer-design.md`.
 
 ## Timer UI
 
