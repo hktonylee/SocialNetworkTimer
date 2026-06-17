@@ -138,3 +138,20 @@ test("serializes overlapping sync requests", async () => {
     active: { startMs: 1_000 },
   });
 });
+
+test("broadcast snapshot contains only timestamp day state", async () => {
+  const snapshots = [];
+  const controller = createBackgroundController({
+    storage: createStorage(undefined),
+    getShouldCount: async () => true,
+    broadcast: async (snapshot) => snapshots.push(snapshot),
+    now: () => 1_000,
+    getDateKey: () => "2026-06-16",
+  });
+
+  await controller.sync();
+
+  const serialized = JSON.stringify(snapshots.at(-1));
+  assert.match(serialized, /SOCIAL_TIMER_DAY/);
+  assert.doesNotMatch(serialized, /url|hostname|tabId|title|origin/i);
+});

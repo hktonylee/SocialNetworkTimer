@@ -1,10 +1,9 @@
 import { createBackgroundController } from "./background-controller.js";
 import { getLocalDateKey, isSupportedUrl } from "./timer.js";
 
-const storageKey = "dailySocialTimerState";
-const alarmName = "social-timer-reconcile";
+const storageKey = "dailySocialTimerIntervals";
+const alarmName = "social-timer-sync";
 const alarmPeriodMinutes = 0.5;
-const maxGapMs = alarmPeriodMinutes * 2 * 60_000;
 
 async function getShouldCount() {
   const window = await chrome.windows.getLastFocused();
@@ -42,38 +41,37 @@ const controller = createBackgroundController({
   broadcast,
   now: Date.now,
   getDateKey: getLocalDateKey,
-  maxGapMs,
 });
 
-function reconcile() {
-  return controller.reconcile().catch((error) => {
-    console.error("Social timer reconciliation failed", error);
+function sync() {
+  return controller.sync().catch((error) => {
+    console.error("Social timer synchronization failed", error);
   });
 }
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create(alarmName, { periodInMinutes: alarmPeriodMinutes });
-  void reconcile();
+  void sync();
 });
 chrome.runtime.onStartup.addListener(() => {
   chrome.alarms.create(alarmName, { periodInMinutes: alarmPeriodMinutes });
-  void reconcile();
+  void sync();
 });
-chrome.tabs.onActivated.addListener(reconcile);
+chrome.tabs.onActivated.addListener(sync);
 chrome.tabs.onUpdated.addListener((_tabId, changeInfo) => {
   if (changeInfo.url !== undefined || changeInfo.status === "complete") {
-    void reconcile();
+    void sync();
   }
 });
-chrome.tabs.onRemoved.addListener(reconcile);
-chrome.windows.onFocusChanged.addListener(reconcile);
+chrome.tabs.onRemoved.addListener(sync);
+chrome.windows.onFocusChanged.addListener(sync);
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === alarmName) {
-    void reconcile();
+    void sync();
   }
 });
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type !== "SOCIAL_TIMER_GET_SNAPSHOT") {
+  if (message?.type !== "SOCIAL_TIMER_SYNC") {
     return false;
   }
 
@@ -81,4 +79,4 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return true;
 });
 
-void reconcile();
+void sync();
