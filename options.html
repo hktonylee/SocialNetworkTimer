@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Social site settings</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 32px 20px;
+        background: Canvas;
+        color: CanvasText;
+      }
+
+      h1 {
+        margin: 0 0 24px;
+        font-size: 28px;
+        line-height: 1.2;
+      }
+
+      .site-list {
+        display: grid;
+        gap: 2px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border-block: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
+      }
+
+      .site {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 52px;
+        gap: 16px;
+        border-block-end: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
+      }
+
+      .site:last-child {
+        border-block-end: 0;
+      }
+
+      .site-name {
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      input[type="checkbox"] {
+        width: 44px;
+        height: 24px;
+        margin: 0;
+        accent-color: #c80f25;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Social site settings</h1>
+    <ul class="site-list" id="site-list"></ul>
+    <script type="module" src="src/options.js"></script>
+  </body>
+</html>

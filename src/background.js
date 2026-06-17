@@ -1,9 +1,19 @@
 import { createBackgroundController } from "./background-controller.js";
-import { getLocalDateKey, isSupportedUrl } from "./timer.js";
+import {
+  enabledSocialSitesStorageKey,
+  getLocalDateKey,
+  isSupportedUrl,
+  normalizeEnabledSiteIds,
+} from "./timer.js";
 
 const storageKey = "dailySocialTimerIntervals";
 const alarmName = "social-timer-sync";
 const alarmPeriodMinutes = 0.5;
+
+async function getEnabledSiteIds() {
+  const stored = await chrome.storage.local.get(enabledSocialSitesStorageKey);
+  return normalizeEnabledSiteIds(stored[enabledSocialSitesStorageKey]);
+}
 
 async function getShouldCount() {
   const window = await chrome.windows.getLastFocused();
@@ -15,14 +25,19 @@ async function getShouldCount() {
     active: true,
     windowId: window.id,
   });
-  return isSupportedUrl(activeTab?.url);
+  return isSupportedUrl(activeTab?.url, await getEnabledSiteIds());
 }
 
 async function broadcast(snapshot) {
-  const tabs = await chrome.tabs.query({});
+  const [tabs, enabledSiteIds] = await Promise.all([
+    chrome.tabs.query({}),
+    getEnabledSiteIds(),
+  ]);
   await Promise.allSettled(
     tabs
-      .filter((tab) => tab.id !== undefined && isSupportedUrl(tab.url))
+      .filter(
+        (tab) => tab.id !== undefined && isSupportedUrl(tab.url, enabledSiteIds),
+      )
       .map((tab) => chrome.tabs.sendMessage(tab.id, snapshot)),
   );
 }
@@ -65,6 +80,14 @@ chrome.tabs.onUpdated.addListener((_tabId, changeInfo) => {
 });
 chrome.tabs.onRemoved.addListener(sync);
 chrome.windows.onFocusChanged.addListener(sync);
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (
+    areaName === "local" &&
+    changes[enabledSocialSitesStorageKey] !== undefined
+  ) {
+    void sync();
+  }
+});
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === alarmName) {
     void sync();

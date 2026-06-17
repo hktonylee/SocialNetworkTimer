@@ -2,14 +2,17 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  defaultEnabledSiteIds,
   computeDayElapsedMs,
   createDaySnapshot,
   formatDuration,
   isSupportedUrl,
   normalizeDayState,
+  normalizeEnabledSiteIds,
   normalizeState,
   reconcileDayState,
   reconcileState,
+  socialSites,
   shouldRetryDayResponse,
 } from "../src/timer.js";
 
@@ -28,6 +31,33 @@ test("rejects lookalike, unsupported, and invalid URLs", () => {
   assert.equal(isSupportedUrl("https://example.com/?next=reddit.com"), false);
   assert.equal(isSupportedUrl("chrome://extensions"), false);
   assert.equal(isSupportedUrl(undefined), false);
+});
+
+test("enables every social site when no setting is stored", () => {
+  assert.deepEqual(
+    normalizeEnabledSiteIds(undefined),
+    socialSites.map((site) => site.id),
+  );
+  assert.deepEqual(defaultEnabledSiteIds(), socialSites.map((site) => site.id));
+  assert.equal(isSupportedUrl("https://www.youtube.com/watch"), true);
+});
+
+test("filters supported URLs through enabled site ids", () => {
+  const enabledSiteIds = defaultEnabledSiteIds().filter((id) => id !== "youtube");
+
+  assert.equal(
+    isSupportedUrl("https://www.youtube.com/watch", enabledSiteIds),
+    false,
+  );
+  assert.equal(
+    isSupportedUrl("https://old.reddit.com/r/test", enabledSiteIds),
+    true,
+  );
+});
+
+test("keeps an empty enabled site list disabled instead of defaulting it", () => {
+  assert.deepEqual(normalizeEnabledSiteIds([]), []);
+  assert.equal(isSupportedUrl("https://www.facebook.com/feed", []), false);
 });
 
 test("formats duration without wrapping after 24 hours", () => {

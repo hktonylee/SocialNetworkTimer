@@ -1,17 +1,28 @@
-void import(chrome.runtime.getURL("src/content-view.js")).then(
-  ({
-    collapseUntil,
-    getDelayToNextWallClockSecond,
-    isPanelHidden,
-    projectDayState,
-    shouldRetryDayResponse,
-  }) => {
+void Promise.all([
+  import(chrome.runtime.getURL("src/content-view.js")),
+  import(chrome.runtime.getURL("src/timer.js")),
+]).then(
+  ([
+    {
+      collapseUntil,
+      getDelayToNextWallClockSecond,
+      isPanelHidden,
+      projectDayState,
+      shouldRetryDayResponse,
+    },
+    {
+      enabledSocialSitesStorageKey,
+      isSupportedUrl,
+      normalizeEnabledSiteIds,
+    },
+  ]) => {
     const hostId = "social-network-daily-timer";
     const syncRetryDelayMs = 1_000;
     let dayState = null;
     let syncRetryTimer;
     let showTimer;
     let collapsedUntilMs = 0;
+    let siteEnabled = false;
 
     const host = document.createElement("div");
     host.id = hostId;
@@ -135,6 +146,10 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
     }
 
     async function requestSync() {
+      if (!siteEnabled) {
+        return;
+      }
+
       try {
         const response = await chrome.runtime.sendMessage({
           type: "SOCIAL_TIMER_SYNC",
@@ -154,6 +169,12 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
     }
 
     function ensureMounted() {
+      if (!siteEnabled) {
+        host.remove();
+        window.clearTimeout(showTimer);
+        return;
+      }
+
       const nowMs = Date.now();
       const hidden = isPanelHidden(String(collapsedUntilMs), nowMs);
       if (hidden) {
@@ -166,7 +187,25 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
       }
     }
 
+    async function refreshSiteEnabled() {
+      const stored = await chrome.storage.local.get(enabledSocialSitesStorageKey);
+      const enabledSiteIds = normalizeEnabledSiteIds(
+        stored[enabledSocialSitesStorageKey],
+      );
+      siteEnabled = isSupportedUrl(window.location.href, enabledSiteIds);
+      ensureMounted();
+      if (siteEnabled) {
+        void requestSync();
+      } else {
+        clearSyncRetry();
+      }
+    }
+
     chrome.runtime.onMessage.addListener((message) => {
+      if (!siteEnabled) {
+        return;
+      }
+
       if (!shouldRetryDayResponse(message)) {
         dayState = message;
         clearSyncRetry();
@@ -177,12 +216,19 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
       ensureMounted();
       void requestSync();
     });
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (
+        areaName === "local" &&
+        changes[enabledSocialSitesStorageKey] !== undefined
+      ) {
+        void refreshSiteEnabled();
+      }
+    });
     collapseButton.addEventListener("click", () => {
       collapsedUntilMs = collapseUntil(Date.now());
       ensureMounted();
     });
 
-    ensureMounted();
     new MutationObserver(ensureMounted).observe(document.documentElement, {
       childList: true,
     });
@@ -191,6 +237,6 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
       window.setInterval(render, 1_000);
     }, getDelayToNextWallClockSecond());
     window.setInterval(requestSync, 30_000);
-    void requestSync();
+    void refreshSiteEnabled();
   },
 );

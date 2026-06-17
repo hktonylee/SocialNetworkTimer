@@ -11,6 +11,7 @@ Chrome extension showing one shared daily social-media usage timer at bottom cen
 - Persists timestamp-only completed intervals and one active interval across reloads and Chrome restarts.
 - Resets at local midnight.
 - Stops counting on unsupported pages or when Chrome loses focus.
+- Stops counting and hides the timer on social sites disabled in extension settings.
 - Stores no URL, hostname, page title, tab id, origin, or account identifier.
 - Circular collapse button hides timer in current tab for one minute; refresh/navigation shows it again.
 
@@ -32,6 +33,7 @@ Supported sites:
 2. Enable **Developer mode**.
 3. Select **Load unpacked**.
 4. Select this project folder.
+5. Select **Details** > **Extension options** to enable or disable sites.
 
 ## Development
 

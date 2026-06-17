@@ -1,35 +1,62 @@
-const supportedHosts = [
-  "facebook.com",
-  "instagram.com",
-  "x.com",
-  "twitter.com",
-  "reddit.com",
-  "tiktok.com",
-  "linkedin.com",
-  "youtube.com",
-  "threads.com",
-  "threads.net",
-  "bsky.app",
+export const enabledSocialSitesStorageKey = "enabledSocialSites";
+
+export const socialSites = [
+  { id: "facebook", label: "Facebook", domains: ["facebook.com"] },
+  { id: "instagram", label: "Instagram", domains: ["instagram.com"] },
+  { id: "x", label: "X / Twitter", domains: ["x.com", "twitter.com"] },
+  { id: "reddit", label: "Reddit", domains: ["reddit.com"] },
+  { id: "tiktok", label: "TikTok", domains: ["tiktok.com"] },
+  { id: "linkedin", label: "LinkedIn", domains: ["linkedin.com"] },
+  { id: "youtube", label: "YouTube", domains: ["youtube.com"] },
+  { id: "threads", label: "Threads", domains: ["threads.com", "threads.net"] },
+  { id: "bluesky", label: "Bluesky", domains: ["bsky.app"] },
 ];
 
 function isHostOrSubdomain(hostname, domain) {
   return hostname === domain || hostname.endsWith(`.${domain}`);
 }
 
-export function isSupportedUrl(value) {
+export function defaultEnabledSiteIds() {
+  return socialSites.map((site) => site.id);
+}
+
+export function normalizeEnabledSiteIds(value) {
+  if (!Array.isArray(value)) {
+    return defaultEnabledSiteIds();
+  }
+
+  const enabled = new Set(value.filter((id) => typeof id === "string"));
+  return socialSites
+    .filter((site) => enabled.has(site.id))
+    .map((site) => site.id);
+}
+
+export function getSiteForUrl(value) {
   if (typeof value !== "string") {
-    return false;
+    return null;
   }
 
   try {
     const url = new URL(value);
-    return (
-      (url.protocol === "http:" || url.protocol === "https:") &&
-      supportedHosts.some((domain) => isHostOrSubdomain(url.hostname, domain))
-    );
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+
+    return socialSites.find((site) =>
+      site.domains.some((domain) => isHostOrSubdomain(url.hostname, domain)),
+    ) ?? null;
   } catch {
+    return null;
+  }
+}
+
+export function isSupportedUrl(value, enabledSiteIds = defaultEnabledSiteIds()) {
+  const site = getSiteForUrl(value);
+  if (site === null) {
     return false;
   }
+
+  return new Set(normalizeEnabledSiteIds(enabledSiteIds)).has(site.id);
 }
 
 export function formatDuration(elapsedMs) {

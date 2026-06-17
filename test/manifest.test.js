@@ -23,3 +23,9 @@ test("uses icon png as extension icon", async () => {
     128: "icon.png",
   });
 });
+
+test("declares options page for site settings", async () => {
+  const manifest = await readManifest();
+
+  assert.equal(manifest.options_page, "options.html");
+});
