@@ -11,7 +11,7 @@ test("build target creates Chrome Web Store publication zip", async () => {
   try {
     execFileSync("npm", ["run", "build"], { encoding: "utf8", stdio: "pipe" });
 
-    const archivePath = "dist/social-network-timer-1.0.0.zip";
+    const archivePath = "dist/social-network-timer-2.0.0.zip";
     const entries = execFileSync("unzip", ["-Z1", archivePath], {
       encoding: "utf8",
     }).trim().split("\n");
