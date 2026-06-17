@@ -2,10 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  computeDayElapsedMs,
+  createDaySnapshot,
   formatDuration,
   isSupportedUrl,
+  normalizeDayState,
   normalizeState,
+  reconcileDayState,
   reconcileState,
+  shouldRetryDayResponse,
 } from "../src/timer.js";
 
 const minute = 60_000;
@@ -138,5 +143,134 @@ test("resets current-day total after local midnight", () => {
       elapsedMs: 10_000,
       activeSinceMs: Date.parse("2026-06-09T00:00:10"),
     },
+  );
+});
+
+test("normalizes missing or corrupt day interval state", () => {
+  assert.deepEqual(normalizeDayState(undefined, "2026-06-16"), {
+    dateKey: "2026-06-16",
+    intervals: [],
+    active: null,
+  });
+
+  assert.deepEqual(
+    normalizeDayState(
+      {
+        dateKey: "2026-06-16",
+        intervals: [
+          { startMs: 10, endMs: 30 },
+          { startMs: 40, endMs: 35 },
+          { startMs: Number.NaN, endMs: 50 },
+        ],
+        active: { startMs: 60 },
+      },
+      "2026-06-16",
+    ),
+    {
+      dateKey: "2026-06-16",
+      intervals: [{ startMs: 10, endMs: 30 }],
+      active: { startMs: 60 },
+    },
+  );
+});
+
+test("resets interval state when local day changes", () => {
+  assert.deepEqual(
+    normalizeDayState(
+      {
+        dateKey: "2026-06-15",
+        intervals: [{ startMs: 10, endMs: 30 }],
+        active: { startMs: 40 },
+      },
+      "2026-06-16",
+    ),
+    {
+      dateKey: "2026-06-16",
+      intervals: [],
+      active: null,
+    },
+  );
+});
+
+test("reconciles start and stop transitions without duplicate active intervals", () => {
+  const started = reconcileDayState(undefined, {
+    nowMs: 1_000,
+    dateKey: "2026-06-16",
+    shouldCount: true,
+  });
+
+  assert.deepEqual(started, {
+    dateKey: "2026-06-16",
+    intervals: [],
+    active: { startMs: 1_000 },
+  });
+
+  const repeated = reconcileDayState(started, {
+    nowMs: 2_000,
+    dateKey: "2026-06-16",
+    shouldCount: true,
+  });
+
+  assert.deepEqual(repeated, started);
+
+  assert.deepEqual(
+    reconcileDayState(repeated, {
+      nowMs: 5_000,
+      dateKey: "2026-06-16",
+      shouldCount: false,
+    }),
+    {
+      dateKey: "2026-06-16",
+      intervals: [{ startMs: 1_000, endMs: 5_000 }],
+      active: null,
+    },
+  );
+});
+
+test("computes daily usage from intervals and active interval", () => {
+  assert.equal(
+    computeDayElapsedMs(
+      {
+        dateKey: "2026-06-16",
+        intervals: [
+          { startMs: 1_000, endMs: 6_000 },
+          { startMs: 9_000, endMs: 11_000 },
+        ],
+        active: { startMs: 20_000 },
+      },
+      { nowMs: 30_000, dateKey: "2026-06-16" },
+    ),
+    17_000,
+  );
+});
+
+test("creates timestamp-only day snapshots and rejects private fields", () => {
+  const snapshot = createDaySnapshot({
+    dateKey: "2026-06-16",
+    intervals: [{ startMs: 1_000, endMs: 2_000 }],
+    active: { startMs: 3_000 },
+  });
+
+  assert.deepEqual(snapshot, {
+    type: "SOCIAL_TIMER_DAY",
+    dateKey: "2026-06-16",
+    intervals: [{ startMs: 1_000, endMs: 2_000 }],
+    active: { startMs: 3_000 },
+  });
+
+  assert.equal(shouldRetryDayResponse(snapshot), false);
+  assert.equal(
+    shouldRetryDayResponse({
+      ...snapshot,
+      url: "https://example.com",
+    }),
+    true,
+  );
+  assert.equal(
+    shouldRetryDayResponse({
+      ...snapshot,
+      intervals: [{ startMs: 1_000, endMs: 2_000, tabId: 7 }],
+    }),
+    true,
   );
 });

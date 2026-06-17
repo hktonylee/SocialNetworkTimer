@@ -51,6 +51,129 @@ export function getLocalDateKey(nowMs = Date.now()) {
   return `${year}-${month}-${day}`;
 }
 
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function hasOnlyKeys(value, keys) {
+  const allowed = new Set(keys);
+  return Object.keys(value).every((key) => allowed.has(key));
+}
+
+function normalizeInterval(value) {
+  if (
+    !isPlainObject(value) ||
+    !hasOnlyKeys(value, ["startMs", "endMs"]) ||
+    !Number.isFinite(value.startMs) ||
+    !Number.isFinite(value.endMs) ||
+    value.endMs < value.startMs
+  ) {
+    return null;
+  }
+
+  return {
+    startMs: value.startMs,
+    endMs: value.endMs,
+  };
+}
+
+function normalizeActive(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    !isPlainObject(value) ||
+    !hasOnlyKeys(value, ["startMs"]) ||
+    !Number.isFinite(value.startMs)
+  ) {
+    return null;
+  }
+
+  return { startMs: value.startMs };
+}
+
+export function normalizeDayState(value, dateKey) {
+  if (!isPlainObject(value) || value.dateKey !== dateKey) {
+    return { dateKey, intervals: [], active: null };
+  }
+
+  const intervals = Array.isArray(value.intervals)
+    ? value.intervals.map(normalizeInterval).filter(Boolean)
+    : [];
+
+  return {
+    dateKey,
+    intervals,
+    active: normalizeActive(value.active),
+  };
+}
+
+export function reconcileDayState(rawState, { nowMs, dateKey, shouldCount }) {
+  const state = normalizeDayState(rawState, dateKey);
+
+  if (shouldCount) {
+    return state.active === null
+      ? { ...state, active: { startMs: nowMs } }
+      : state;
+  }
+
+  if (state.active === null) {
+    return state;
+  }
+
+  return {
+    dateKey,
+    intervals: [
+      ...state.intervals,
+      {
+        startMs: state.active.startMs,
+        endMs: Math.max(state.active.startMs, nowMs),
+      },
+    ],
+    active: null,
+  };
+}
+
+export function computeDayElapsedMs(rawState, { nowMs, dateKey }) {
+  const state = normalizeDayState(rawState, dateKey);
+  const completedMs = state.intervals.reduce(
+    (total, interval) => total + Math.max(0, interval.endMs - interval.startMs),
+    0,
+  );
+  const activeMs =
+    state.active === null ? 0 : Math.max(0, nowMs - state.active.startMs);
+
+  return completedMs + activeMs;
+}
+
+export function createDaySnapshot(rawState) {
+  const dateKey = typeof rawState?.dateKey === "string" ? rawState.dateKey : "";
+  const state = normalizeDayState(rawState, dateKey);
+  return {
+    type: "SOCIAL_TIMER_DAY",
+    dateKey: state.dateKey,
+    intervals: state.intervals,
+    active: state.active,
+  };
+}
+
+export function shouldRetryDayResponse(response) {
+  if (
+    !isPlainObject(response) ||
+    !hasOnlyKeys(response, ["type", "dateKey", "intervals", "active"]) ||
+    response.type !== "SOCIAL_TIMER_DAY" ||
+    typeof response.dateKey !== "string" ||
+    !Array.isArray(response.intervals)
+  ) {
+    return true;
+  }
+
+  const normalized = normalizeDayState(response, response.dateKey);
+  return (
+    normalized.intervals.length !== response.intervals.length ||
+    (response.active !== null && normalized.active === null)
+  );
+}
+
 export function normalizeState(value, dateKey) {
   const valid =
     value !== null &&
