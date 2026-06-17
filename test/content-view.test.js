@@ -5,42 +5,40 @@ import {
   collapseUntil,
   getDelayToNextWallClockSecond,
   isPanelHidden,
-  projectSnapshot,
+  projectDayState,
+  shouldRetryDayResponse,
 } from "../src/content-view.js";
-import * as contentView from "../src/content-view.js";
 
-test("projects active snapshot forward for smooth local display", () => {
+test("projects active day state forward for smooth local display", () => {
   assert.equal(
-    projectSnapshot(
+    projectDayState(
       {
+        type: "SOCIAL_TIMER_DAY",
         dateKey: "2026-06-09",
-        elapsedMs: 10_000,
-        isCounting: true,
-        syncedAtMs: 1_000,
+        intervals: [{ startMs: 1_000, endMs: 6_000 }],
+        active: { startMs: 10_000 },
       },
       {
-        nowMs: 6_900,
+        nowMs: 15_000,
         dateKey: "2026-06-09",
-        maxLocalGapMs: 60_000,
       },
     ),
-    "00:00:15",
+    "00:00:10",
   );
 });
 
-test("does not project inactive snapshot forward", () => {
+test("does not project inactive day state forward", () => {
   assert.equal(
-    projectSnapshot(
+    projectDayState(
       {
+        type: "SOCIAL_TIMER_DAY",
         dateKey: "2026-06-09",
-        elapsedMs: 10_000,
-        isCounting: false,
-        syncedAtMs: 1_000,
+        intervals: [{ startMs: 1_000, endMs: 11_000 }],
+        active: null,
       },
       {
         nowMs: 20_000,
         dateKey: "2026-06-09",
-        maxLocalGapMs: 60_000,
       },
     ),
     "00:00:10",
@@ -49,70 +47,60 @@ test("does not project inactive snapshot forward", () => {
 
 test("resets display when local day changes", () => {
   assert.equal(
-    projectSnapshot(
+    projectDayState(
       {
+        type: "SOCIAL_TIMER_DAY",
         dateKey: "2026-06-08",
-        elapsedMs: 3_600_000,
-        isCounting: true,
-        syncedAtMs: 1_000,
+        intervals: [{ startMs: 1_000, endMs: 3_601_000 }],
+        active: { startMs: 4_000 },
       },
       {
         nowMs: 20_000,
         dateKey: "2026-06-09",
-        maxLocalGapMs: 60_000,
       },
     ),
     "00:00:00",
   );
 });
 
-test("caps local projection after uncertain long gap", () => {
+test("renders zero for malformed day state", () => {
   assert.equal(
-    projectSnapshot(
-      {
-        dateKey: "2026-06-09",
-        elapsedMs: 0,
-        isCounting: true,
-        syncedAtMs: 1_000,
-      },
-      {
-        nowMs: 600_000,
-        dateKey: "2026-06-09",
-        maxLocalGapMs: 60_000,
-      },
-    ),
-    "00:01:00",
-  );
-});
-
-test("renders zero for malformed snapshots", () => {
-  assert.equal(
-    projectSnapshot(null, {
+    projectDayState(null, {
       nowMs: 20_000,
       dateKey: "2026-06-09",
-      maxLocalGapMs: 60_000,
     }),
     "00:00:00",
   );
 });
 
-test("retries page-load snapshot requests until valid snapshot arrives", () => {
-  assert.equal(typeof contentView.shouldRetrySnapshotResponse, "function");
-  assert.equal(contentView.shouldRetrySnapshotResponse(null), true);
-  assert.equal(contentView.shouldRetrySnapshotResponse({ type: "OTHER" }), true);
+test("retries page-load day state requests until valid response arrives", () => {
+  assert.equal(shouldRetryDayResponse(null), true);
+  assert.equal(shouldRetryDayResponse({ type: "OTHER" }), true);
   assert.equal(
-    contentView.shouldRetrySnapshotResponse({ type: "SOCIAL_TIMER_SNAPSHOT" }),
+    shouldRetryDayResponse({ type: "SOCIAL_TIMER_DAY" }),
     true,
   );
   assert.equal(
-    contentView.shouldRetrySnapshotResponse({
-      type: "SOCIAL_TIMER_SNAPSHOT",
+    shouldRetryDayResponse({
+      type: "SOCIAL_TIMER_DAY",
       dateKey: "2026-06-09",
-      elapsedMs: 10_000,
-      isCounting: true,
-      syncedAtMs: 20_000,
+      intervals: [],
+      active: null,
     }),
     false,
+  );
+});
+
+test("does not render private fields in day responses", () => {
+  assert.equal(
+    shouldRetryDayResponse({
+      type: "SOCIAL_TIMER_DAY",
+      dateKey: "2026-06-16",
+      intervals: [],
+      active: null,
+      url: "https://example.com",
+    }),
+    true,
   );
 });
 

@@ -3,14 +3,13 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
     collapseUntil,
     getDelayToNextWallClockSecond,
     isPanelHidden,
-    projectSnapshot,
-    shouldRetrySnapshotResponse,
+    projectDayState,
+    shouldRetryDayResponse,
   }) => {
     const hostId = "social-network-daily-timer";
-    const maxLocalGapMs = 60_000;
-    const snapshotRetryDelayMs = 1_000;
-    let snapshot = null;
-    let snapshotRetryTimer;
+    const syncRetryDelayMs = 1_000;
+    let dayState = null;
+    let syncRetryTimer;
     let showTimer;
     let collapsedUntilMs = 0;
 
@@ -119,39 +118,38 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
 
     function render() {
       const nowMs = Date.now();
-      timer.textContent = projectSnapshot(snapshot, {
+      timer.textContent = projectDayState(dayState, {
         nowMs,
         dateKey: localDateKey(nowMs),
-        maxLocalGapMs,
       });
     }
 
-    function clearSnapshotRetry() {
-      window.clearTimeout(snapshotRetryTimer);
-      snapshotRetryTimer = undefined;
+    function clearSyncRetry() {
+      window.clearTimeout(syncRetryTimer);
+      syncRetryTimer = undefined;
     }
 
-    function scheduleSnapshotRetry() {
-      window.clearTimeout(snapshotRetryTimer);
-      snapshotRetryTimer = window.setTimeout(requestSnapshot, snapshotRetryDelayMs);
+    function scheduleSyncRetry() {
+      window.clearTimeout(syncRetryTimer);
+      syncRetryTimer = window.setTimeout(requestSync, syncRetryDelayMs);
     }
 
-    async function requestSnapshot() {
+    async function requestSync() {
       try {
         const response = await chrome.runtime.sendMessage({
-          type: "SOCIAL_TIMER_GET_SNAPSHOT",
+          type: "SOCIAL_TIMER_SYNC",
         });
 
-        if (shouldRetrySnapshotResponse(response)) {
-          scheduleSnapshotRetry();
+        if (shouldRetryDayResponse(response)) {
+          scheduleSyncRetry();
           return;
         }
 
-        snapshot = response;
-        clearSnapshotRetry();
+        dayState = response;
+        clearSyncRetry();
         render();
       } catch {
-        scheduleSnapshotRetry();
+        scheduleSyncRetry();
       }
     }
 
@@ -169,15 +167,15 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
     }
 
     chrome.runtime.onMessage.addListener((message) => {
-      if (!shouldRetrySnapshotResponse(message)) {
-        snapshot = message;
-        clearSnapshotRetry();
+      if (!shouldRetryDayResponse(message)) {
+        dayState = message;
+        clearSyncRetry();
         render();
       }
     });
     document.addEventListener("visibilitychange", () => {
       ensureMounted();
-      void requestSnapshot();
+      void requestSync();
     });
     collapseButton.addEventListener("click", () => {
       collapsedUntilMs = collapseUntil(Date.now());
@@ -192,7 +190,7 @@ void import(chrome.runtime.getURL("src/content-view.js")).then(
       render();
       window.setInterval(render, 1_000);
     }, getDelayToNextWallClockSecond());
-    window.setInterval(requestSnapshot, 30_000);
-    void requestSnapshot();
+    window.setInterval(requestSync, 30_000);
+    void requestSync();
   },
 );

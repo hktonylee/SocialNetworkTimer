@@ -1,4 +1,8 @@
-import { formatDuration } from "./timer.js";
+import {
+  computeDayElapsedMs,
+  formatDuration,
+  shouldRetryDayResponse as shouldRetryTimerDayResponse,
+} from "./timer.js";
 
 export function getDelayToNextWallClockSecond(nowMs = Date.now()) {
   const remainderMs = Math.max(0, Math.floor(nowMs)) % 1_000;
@@ -20,36 +24,14 @@ export function isPanelHidden(storedExpiry, nowMs) {
   return Number.isFinite(expiryMs) && expiryMs > nowMs;
 }
 
-export function projectSnapshot(
-  snapshot,
-  { nowMs, dateKey, maxLocalGapMs },
-) {
-  if (
-    snapshot === null ||
-    typeof snapshot !== "object" ||
-    snapshot.dateKey !== dateKey ||
-    !Number.isFinite(snapshot.elapsedMs) ||
-    snapshot.elapsedMs < 0 ||
-    !Number.isFinite(snapshot.syncedAtMs)
-  ) {
+export function projectDayState(dayState, { nowMs, dateKey }) {
+  if (shouldRetryDayResponse(dayState) || dayState.dateKey !== dateKey) {
     return formatDuration(0);
   }
 
-  const projectedMs = snapshot.isCounting
-    ? Math.min(Math.max(0, nowMs - snapshot.syncedAtMs), maxLocalGapMs)
-    : 0;
-  return formatDuration(snapshot.elapsedMs + projectedMs);
+  return formatDuration(computeDayElapsedMs(dayState, { nowMs, dateKey }));
 }
 
-export function shouldRetrySnapshotResponse(response) {
-  return !(
-    response !== null &&
-    typeof response === "object" &&
-    response.type === "SOCIAL_TIMER_SNAPSHOT" &&
-    typeof response.dateKey === "string" &&
-    Number.isFinite(response.elapsedMs) &&
-    response.elapsedMs >= 0 &&
-    typeof response.isCounting === "boolean" &&
-    Number.isFinite(response.syncedAtMs)
-  );
+export function shouldRetryDayResponse(response) {
+  return shouldRetryTimerDayResponse(response);
 }
