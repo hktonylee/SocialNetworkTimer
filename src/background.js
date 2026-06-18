@@ -28,6 +28,31 @@ async function getShouldCount() {
   return isSupportedUrl(activeTab?.url, await getEnabledSiteIds());
 }
 
+async function getShouldCountForSender(sender) {
+  const senderTab = sender?.tab;
+  if (
+    senderTab?.id === undefined ||
+    senderTab.windowId === undefined ||
+    senderTab.windowId === chrome.windows.WINDOW_ID_NONE
+  ) {
+    return getShouldCount();
+  }
+
+  const [window, currentTab, enabledSiteIds] = await Promise.all([
+    chrome.windows.get(senderTab.windowId),
+    chrome.tabs.get(senderTab.id).catch(() => senderTab),
+    getEnabledSiteIds(),
+  ]);
+  if (!window.focused) {
+    return false;
+  }
+
+  return (
+    currentTab.active === true &&
+    isSupportedUrl(currentTab.url ?? senderTab.url, enabledSiteIds)
+  );
+}
+
 async function broadcast(snapshot) {
   const [tabs, enabledSiteIds] = await Promise.all([
     chrome.tabs.query({}),
@@ -93,12 +118,15 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     void sync();
   }
 });
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type !== "SOCIAL_TIMER_SYNC") {
     return false;
   }
 
-  controller.getSnapshot().then(sendResponse).catch(() => sendResponse(null));
+  getShouldCountForSender(sender)
+    .then((shouldCount) => controller.getSnapshot({ shouldCount }))
+    .then(sendResponse)
+    .catch(() => sendResponse(null));
   return true;
 });
 

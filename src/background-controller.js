@@ -9,14 +9,16 @@ export function createBackgroundController({
 }) {
   let queue = Promise.resolve();
 
-  function sync() {
+  function sync(options) {
     const nowMs = now();
     const dateKey = getDateKey(nowMs);
 
     const operation = queue.then(async () => {
       const [storedState, shouldCount] = await Promise.all([
         storage.read(),
-        getShouldCount(),
+        options?.shouldCount === undefined
+          ? getShouldCount()
+          : options.shouldCount,
       ]);
       const state = reconcileDayState(storedState, {
         nowMs,

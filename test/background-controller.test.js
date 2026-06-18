@@ -46,6 +46,25 @@ test("starts and broadcasts one active interval", async () => {
   assert.deepEqual(snapshots.at(-1), snapshot);
 });
 
+test("uses caller-provided active state for sender-driven sync", async () => {
+  const storage = createStorage(undefined);
+  const controller = createBackgroundController({
+    storage,
+    getShouldCount: async () => false,
+    broadcast: async () => {},
+    now: () => 1_000,
+    getDateKey: () => "2026-06-16",
+  });
+
+  await controller.sync({ shouldCount: true });
+
+  assert.deepEqual(storage.value(), {
+    dateKey: "2026-06-16",
+    intervals: [],
+    active: { startMs: 1_000 },
+  });
+});
+
 test("closes active interval when counting stops", async () => {
   const nowMs = 5_000;
   const storage = createStorage({
