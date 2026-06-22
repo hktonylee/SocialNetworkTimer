@@ -42,3 +42,10 @@ test("retries timer sync quickly when page-load response is missing", async () =
   assert.match(source, /window\.setTimeout\(requestSync,\s*syncRetryDelayMs\)/);
   assert.match(source, /catch\s*\{[\s\S]*scheduleSyncRetry\(\);/);
 });
+
+test("requests timer sync when the page is restored from page cache", async () => {
+  const source = await readFile(new URL("../src/content.js", import.meta.url), "utf8");
+
+  assert.match(source, /function resumeTimer\(\) \{[\s\S]*requestSync\(\);[\s\S]*\}/);
+  assert.match(source, /window\.addEventListener\("pageshow",\s*resumeTimer\);/);
+});

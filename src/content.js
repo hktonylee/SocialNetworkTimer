@@ -212,10 +212,13 @@ void Promise.all([
         render();
       }
     });
-    document.addEventListener("visibilitychange", () => {
+    function resumeTimer() {
       ensureMounted();
       void requestSync();
-    });
+    }
+
+    document.addEventListener("visibilitychange", resumeTimer);
+    window.addEventListener("pageshow", resumeTimer);
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (
         areaName === "local" &&
