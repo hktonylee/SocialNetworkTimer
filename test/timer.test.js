@@ -199,7 +199,7 @@ test("normalizes missing or corrupt day interval state", () => {
     {
       dateKey: "2026-06-16",
       intervals: [{ startMs: 10, endMs: 30 }],
-      active: { startMs: 60 },
+      active: { startMs: 60, lastHeartbeatMs: 60 },
     },
   );
 });
@@ -232,7 +232,7 @@ test("reconciles start and stop transitions without duplicate active intervals",
   assert.deepEqual(started, {
     dateKey: "2026-06-16",
     intervals: [],
-    active: { startMs: 1_000 },
+    active: { startMs: 1_000, lastHeartbeatMs: 1_000 },
   });
 
   const repeated = reconcileDayState(started, {
@@ -241,7 +241,11 @@ test("reconciles start and stop transitions without duplicate active intervals",
     shouldCount: true,
   });
 
-  assert.deepEqual(repeated, started);
+  assert.deepEqual(repeated, {
+    dateKey: "2026-06-16",
+    intervals: [],
+    active: { startMs: 1_000, lastHeartbeatMs: 2_000 },
+  });
 
   assert.deepEqual(
     reconcileDayState(repeated, {
@@ -257,6 +261,53 @@ test("reconciles start and stop transitions without duplicate active intervals",
   );
 });
 
+test("refreshes active heartbeat while counting continues", () => {
+  assert.deepEqual(
+    reconcileDayState(
+      {
+        dateKey: "2026-06-16",
+        intervals: [],
+        active: { startMs: 1_000, lastHeartbeatMs: 2_000 },
+      },
+      {
+        nowMs: 30_000,
+        dateKey: "2026-06-16",
+        shouldCount: true,
+      },
+    ),
+    {
+      dateKey: "2026-06-16",
+      intervals: [],
+      active: { startMs: 1_000, lastHeartbeatMs: 30_000 },
+    },
+  );
+});
+
+test("caps stale active intervals at last heartbeat plus grace", () => {
+  assert.deepEqual(
+    reconcileDayState(
+      {
+        dateKey: "2026-06-16",
+        intervals: [{ startMs: 0, endMs: 500 }],
+        active: { startMs: 1_000, lastHeartbeatMs: 10_000 },
+      },
+      {
+        nowMs: 200_000,
+        dateKey: "2026-06-16",
+        shouldCount: true,
+      },
+    ),
+    {
+      dateKey: "2026-06-16",
+      intervals: [
+        { startMs: 0, endMs: 500 },
+        { startMs: 1_000, endMs: 85_000 },
+      ],
+      active: { startMs: 200_000, lastHeartbeatMs: 200_000 },
+    },
+  );
+});
+
 test("computes daily usage from intervals and active interval", () => {
   assert.equal(
     computeDayElapsedMs(
@@ -266,7 +317,7 @@ test("computes daily usage from intervals and active interval", () => {
           { startMs: 1_000, endMs: 6_000 },
           { startMs: 9_000, endMs: 11_000 },
         ],
-        active: { startMs: 20_000 },
+        active: { startMs: 20_000, lastHeartbeatMs: 25_000 },
       },
       { nowMs: 30_000, dateKey: "2026-06-16" },
     ),
@@ -278,14 +329,14 @@ test("creates timestamp-only day snapshots and rejects private fields", () => {
   const snapshot = createDaySnapshot({
     dateKey: "2026-06-16",
     intervals: [{ startMs: 1_000, endMs: 2_000 }],
-    active: { startMs: 3_000 },
+    active: { startMs: 3_000, lastHeartbeatMs: 3_000 },
   });
 
   assert.deepEqual(snapshot, {
     type: "SOCIAL_TIMER_DAY",
     dateKey: "2026-06-16",
     intervals: [{ startMs: 1_000, endMs: 2_000 }],
-    active: { startMs: 3_000 },
+    active: { startMs: 3_000, lastHeartbeatMs: 3_000 },
   });
 
   assert.equal(shouldRetryDayResponse(snapshot), false);

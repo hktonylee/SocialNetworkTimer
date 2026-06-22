@@ -16,7 +16,7 @@ test("projects active day state forward for smooth local display", () => {
         type: "SOCIAL_TIMER_DAY",
         dateKey: "2026-06-09",
         intervals: [{ startMs: 1_000, endMs: 6_000 }],
-        active: { startMs: 10_000 },
+        active: { startMs: 10_000, lastHeartbeatMs: 10_000 },
       },
       {
         nowMs: 15_000,
@@ -52,7 +52,7 @@ test("resets display when local day changes", () => {
         type: "SOCIAL_TIMER_DAY",
         dateKey: "2026-06-08",
         intervals: [{ startMs: 1_000, endMs: 3_601_000 }],
-        active: { startMs: 4_000 },
+        active: { startMs: 4_000, lastHeartbeatMs: 4_000 },
       },
       {
         nowMs: 20_000,

@@ -5,9 +5,9 @@ data remotely.
 
 The extension stores timestamp-only timer intervals in `chrome.storage.local`.
 Stored timer data contains the local date, completed interval start/end
-timestamps, and one optional active start timestamp. It does not store URLs,
-hostnames, page titles, tab IDs, origins, account identifiers, browsing history,
-or remote analytics data.
+timestamps, and one optional active start plus last-heartbeat timestamp. It
+does not store URLs, hostnames, page titles, tab IDs, origins, account
+identifiers, browsing history, or remote analytics data.
 
 This data is stored locally in the user's browser using Chrome's local
 extension storage. It never leaves the user's device.

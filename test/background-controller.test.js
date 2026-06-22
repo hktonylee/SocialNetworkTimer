@@ -35,13 +35,13 @@ test("starts and broadcasts one active interval", async () => {
   assert.deepEqual(storage.value(), {
     dateKey: "2026-06-16",
     intervals: [],
-    active: { startMs: 1_000 },
+    active: { startMs: 1_000, lastHeartbeatMs: 1_000 },
   });
   assert.deepEqual(snapshot, {
     type: "SOCIAL_TIMER_DAY",
     dateKey: "2026-06-16",
     intervals: [],
-    active: { startMs: 1_000 },
+    active: { startMs: 1_000, lastHeartbeatMs: 1_000 },
   });
   assert.deepEqual(snapshots.at(-1), snapshot);
 });
@@ -61,7 +61,7 @@ test("uses caller-provided active state for sender-driven sync", async () => {
   assert.deepEqual(storage.value(), {
     dateKey: "2026-06-16",
     intervals: [],
-    active: { startMs: 1_000 },
+    active: { startMs: 1_000, lastHeartbeatMs: 1_000 },
   });
 });
 
@@ -115,7 +115,33 @@ test("does not duplicate active interval on repeated sync", async () => {
   assert.deepEqual(storage.value(), {
     dateKey: "2026-06-16",
     intervals: [],
-    active: { startMs: 1_000 },
+    active: { startMs: 1_000, lastHeartbeatMs: 2_000 },
+  });
+});
+
+test("caps stale active interval and starts a fresh active interval", async () => {
+  const storage = createStorage({
+    dateKey: "2026-06-16",
+    intervals: [{ startMs: 0, endMs: 500 }],
+    active: { startMs: 1_000, lastHeartbeatMs: 10_000 },
+  });
+  const controller = createBackgroundController({
+    storage,
+    getShouldCount: async () => true,
+    broadcast: async () => {},
+    now: () => 200_000,
+    getDateKey: () => "2026-06-16",
+  });
+
+  await controller.sync();
+
+  assert.deepEqual(storage.value(), {
+    dateKey: "2026-06-16",
+    intervals: [
+      { startMs: 0, endMs: 500 },
+      { startMs: 1_000, endMs: 85_000 },
+    ],
+    active: { startMs: 200_000, lastHeartbeatMs: 200_000 },
   });
 });
 
@@ -154,7 +180,7 @@ test("serializes overlapping sync requests", async () => {
   assert.deepEqual(storage.value(), {
     dateKey: "2026-06-16",
     intervals: [],
-    active: { startMs: 1_000 },
+    active: { startMs: 1_000, lastHeartbeatMs: 1_000 },
   });
 });
 

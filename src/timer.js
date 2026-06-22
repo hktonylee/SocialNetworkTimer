@@ -1,4 +1,5 @@
 export const enabledSocialSitesStorageKey = "enabledSocialSites";
+export const activeHeartbeatGraceMs = 75_000;
 
 export const socialSites = [
   { id: "facebook", label: "Facebook", domains: ["facebook.com"] },
@@ -109,13 +110,20 @@ function normalizeActive(value) {
     value === null ||
     value === undefined ||
     !isPlainObject(value) ||
-    !hasOnlyKeys(value, ["startMs"]) ||
+    !hasOnlyKeys(value, ["startMs", "lastHeartbeatMs"]) ||
     !Number.isFinite(value.startMs)
   ) {
     return null;
   }
 
-  return { startMs: value.startMs };
+  const lastHeartbeatMs = Number.isFinite(value.lastHeartbeatMs)
+    ? Math.max(value.startMs, value.lastHeartbeatMs)
+    : value.startMs;
+
+  return {
+    startMs: value.startMs,
+    lastHeartbeatMs,
+  };
 }
 
 export function normalizeDayState(value, dateKey) {
@@ -137,27 +145,43 @@ export function normalizeDayState(value, dateKey) {
 export function reconcileDayState(rawState, { nowMs, dateKey, shouldCount }) {
   const state = normalizeDayState(rawState, dateKey);
 
-  if (shouldCount) {
-    return state.active === null
-      ? { ...state, active: { startMs: nowMs } }
-      : state;
-  }
+  if (state.active !== null) {
+    const cappedEndMs = Math.max(
+      state.active.startMs,
+      Math.min(nowMs, state.active.lastHeartbeatMs + activeHeartbeatGraceMs),
+    );
+    const stale = nowMs > cappedEndMs;
 
-  if (state.active === null) {
-    return state;
-  }
+    if (stale || !shouldCount) {
+      return {
+        dateKey,
+        intervals: [
+          ...state.intervals,
+          {
+            startMs: state.active.startMs,
+            endMs: cappedEndMs,
+          },
+        ],
+        active: shouldCount
+          ? { startMs: nowMs, lastHeartbeatMs: nowMs }
+          : null,
+      };
+    }
 
-  return {
-    dateKey,
-    intervals: [
-      ...state.intervals,
-      {
+    return {
+      ...state,
+      active: {
         startMs: state.active.startMs,
-        endMs: Math.max(state.active.startMs, nowMs),
+        lastHeartbeatMs: nowMs,
       },
-    ],
-    active: null,
-  };
+    };
+  }
+
+  if (shouldCount) {
+    return { ...state, active: { startMs: nowMs, lastHeartbeatMs: nowMs } };
+  }
+
+  return state;
 }
 
 export function computeDayElapsedMs(rawState, { nowMs, dateKey }) {
@@ -167,7 +191,13 @@ export function computeDayElapsedMs(rawState, { nowMs, dateKey }) {
     0,
   );
   const activeMs =
-    state.active === null ? 0 : Math.max(0, nowMs - state.active.startMs);
+    state.active === null
+      ? 0
+      : Math.max(
+          0,
+          Math.min(nowMs, state.active.lastHeartbeatMs + activeHeartbeatGraceMs) -
+            state.active.startMs,
+        );
 
   return completedMs + activeMs;
 }

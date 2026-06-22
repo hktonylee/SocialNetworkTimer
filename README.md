@@ -8,7 +8,7 @@ Chrome extension showing one shared daily social-media usage timer at bottom cen
 
 - Counts only active social tab in focused Chrome window.
 - Never double-counts multiple tabs or windows.
-- Persists timestamp-only completed intervals and one active interval across reloads and Chrome restarts.
+- Persists timestamp-only completed intervals and one active interval with a heartbeat across reloads and Chrome restarts.
 - Resets at local midnight.
 - Stops counting on unsupported pages or when Chrome loses focus.
 - Stops counting and hides the timer on social sites disabled in extension settings.
