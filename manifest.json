@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Social Network Daily Timer",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Shows shared daily time spent on social media.",
   "icons": {
     "128": "icon.png"
